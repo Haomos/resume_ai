@@ -1,0 +1,6 @@
+export { BasicSection } from './BasicSection'
+export { WorkSection } from './WorkSection'
+export { EducationSection } from './EducationSection'
+export { ProjectsSection } from './ProjectsSection'
+export { SkillsSection } from './SkillsSection'
+export { CustomSection } from './CustomSection'

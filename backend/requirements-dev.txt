@@ -1,0 +1,11 @@
+# Dev / test dependencies — install in addition to requirements.txt:
+#   pip install -r requirements.txt -r requirements-dev.txt
+#
+# Production Docker image installs only requirements.txt; these are excluded
+# to keep the image lean and reduce attack surface.
+
+-r requirements.txt
+
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+git-filter-repo>=2.47.0   # §8.45 — privacy cleanup, history rewrites

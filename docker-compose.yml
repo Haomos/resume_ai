@@ -1,0 +1,105 @@
+# docker-compose.yml — ResumeAI full-stack deployment (Phase 6)
+#
+# Quick start (zero-config, BYOK mode):
+#   docker compose up -d --build
+#   # Open http://localhost
+#   # Configure LLM API key via the in-app Settings page (saved to DB).
+#
+# Pre-config (optional — for unattended demo):
+#   cp .env.prod.example .env.prod
+#   # Edit .env.prod (SECRET_KEY, LLM_API_KEY, ...)
+#   docker compose up -d --build
+#
+# Operations:
+#   Stop:        docker compose down
+#   Logs:        docker compose logs -f [backend|frontend]
+#   Update:      git pull && docker compose up -d --build
+#   Reset data:  docker compose down -v   # WARNING: deletes the SQLite DB volume
+#
+# Architecture:
+#   - frontend (nginx:alpine, ~63MB) serves the SPA on port 80 and
+#     reverse-proxies /api/* to backend over the internal docker network.
+#   - backend (FastAPI + Playwright, ~3GB) is NOT exposed to the host.
+#     Service-name DNS (`backend`) resolves only within `resumeai_net`.
+#   - SQLite DB + uploaded resumes persist in named volume `resumeai_data`,
+#     mounted at /app/data inside the backend container.
+
+name: resumeai
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: resumeai-backend:latest
+    container_name: resumeai-backend
+    restart: unless-stopped
+    # ⚠️ NOT exposing 8000 to the host on purpose. Only frontend nginx can
+    # reach backend over the internal docker network. If you want to call
+    # the API from your host (curl/Postman), uncomment the `ports:` block
+    # below and remove `expose:`.
+    expose:
+      - "8000"
+    # ports:
+    #   - "8000:8000"   # ← uncomment for direct host-to-backend debugging
+    env_file:
+      # Compose 2.24+ syntax — file is optional. If absent, every var falls
+      # back to its default in backend/app/config.py (BYOK works fine).
+      - path: .env.prod
+        required: false
+    volumes:
+      # DB_URL default → sqlite+aiosqlite:///data/resume_assistant.db
+      # UPLOAD_DIR default → ./data/uploads
+      # Both resolve under /app (WORKDIR in backend/Dockerfile), so a single
+      # mount at /app/data covers both. Named volume → portable across hosts.
+      - resumeai_data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health',timeout=5).status==200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      # 60s gives alembic enough time to run migrations on a fresh DB.
+      start_period: 60s
+      retries: 3
+    networks:
+      - resumeai_net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: resumeai-frontend:latest
+    container_name: resumeai-frontend
+    restart: unless-stopped
+    ports:
+      # host:container — if port 80 is already used on your host, change the
+      # left side, e.g. "8080:80", then open http://localhost:8080.
+      - "80:80"
+    depends_on:
+      backend:
+        # Wait for backend HEALTHCHECK to pass before starting frontend.
+        # Prevents the 30-60s window where nginx is up but /api/* returns 502.
+        condition: service_healthy
+    healthcheck:
+      # NOTE: must use 127.0.0.1 (IPv4) — nginx:alpine resolves `localhost` to
+      # ::1 (IPv6) first, but the SPA's `listen 80;` only binds IPv4. Result:
+      # `wget --spider http://localhost/` returns "connection refused" while
+      # the service is healthy. See §8.54 / PATTERNS.md `nginx-alpine-ipv6-localhost-trap`.
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    networks:
+      - resumeai_net
+
+volumes:
+  resumeai_data:
+    # Named volume. Inspect on disk:
+    #   docker volume inspect resumeai_resumeai_data
+    # Default driver `local` stores under Docker Desktop's WSL2 VM (Windows)
+    # or /var/lib/docker/volumes (Linux). `docker compose down -v` deletes it.
+    driver: local
+
+networks:
+  resumeai_net:
+    driver: bridge

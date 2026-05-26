@@ -1,0 +1,48 @@
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
+sqlalchemy>=2.0.0
+aiosqlite>=0.19.0
+alembic>=1.13.0
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+numpy>=1.24.0
+httpx>=0.25.0
+openai>=1.0.0
+anthropic>=0.40.0
+cryptography>=41.0.0
+certifi>=2024.2.2
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+bcrypt==4.1.2
+email-validator>=2.0.0
+PyMuPDF>=1.23.0
+python-docx>=0.8.11
+beautifulsoup4>=4.12.0
+Pillow>=10.0.0
+jinja2>=3.1.0
+trafilatura>=1.6.0
+scrapling==0.2.4         # Locked: 0.3+ deprecated Fetcher() stealth auto-config, breaks zhaopin.com
+playwright==1.59.0       # Pinned to base image (mcr.microsoft.com/playwright/python:v1.59.0-noble)
+patchright>=1.59.0       # Undetected Playwright — primary anti-bot layer in jobs.py
+msgspec>=0.21.0          # Scrapling dependency
+browserforge>=1.2.0
+curl-cffi>=0.15.0
+
+# === Dev / test dependencies (NOT installed in production Docker image) ===
+# Install via: pip install -r requirements-dev.txt
+# pytest>=7.4.0
+# pytest-asyncio>=0.21.0
+
+# === Removed in §8.33 (commit 86dc4d1) — Embedding engine deprecation ===
+# Kept here as comments so anyone reading the history understands why
+# the image is suddenly ~2.5GB smaller than the Phase 4 dev environment.
+# sentence-transformers>=2.2.0
+# faiss-gpu>=1.7.4; sys_platform != "darwin"
+# faiss-cpu>=1.7.4; sys_platform == "darwin"
+
+# === OCR engines (optional — install only if you need image-resume support) ===
+# After installing, set OCR_ENABLED=true in .env. First call downloads models.
+# paddlepaddle>=2.6.0       # CPU build; use paddlepaddle-gpu for GPU
+# paddleocr>=2.7.0          # ~400MB models; best Chinese accuracy
+# easyocr>=1.7.0            # ~150MB models; multilingual fallback

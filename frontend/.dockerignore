@@ -1,0 +1,51 @@
+# ResumeAI Frontend — .dockerignore
+#
+# Build context: ./frontend/ — anything matched here is NEVER copied into
+# the build context. Same role as backend/.dockerignore: privacy + speed.
+
+# ─── Build artifacts (must be re-built inside the builder stage) ────────
+node_modules/
+dist/
+build/
+.vite/
+.cache/
+
+# ─── Local env (never bake secrets into the image) ──────────────────────
+.env
+.env.*
+!.env.example
+
+# ─── Logs ───────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# ─── Test / coverage / typing artifacts ─────────────────────────────────
+coverage/
+.nyc_output/
+*.tsbuildinfo
+
+# ─── Docker-specific (already on the host, not for the image) ───────────
+Dockerfile
+.dockerignore
+# NOTE: nginx.conf is intentionally NOT excluded — the Dockerfile COPYies
+# it into stage 2 (nginx:alpine) at /etc/nginx/conf.d/default.conf.
+
+# ─── IDE / editor cruft ─────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ─── OS junk ────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ─── Docs (not needed in image) ─────────────────────────────────────────
+README.md
+*.md
+
+# ─── Git internal (paranoid) ────────────────────────────────────────────
+.git/
+.gitignore

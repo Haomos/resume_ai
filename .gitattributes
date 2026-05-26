@@ -1,0 +1,31 @@
+# Ensure shell scripts and Docker files use LF endings on all platforms.
+# Windows checkouts will get LF (not CRLF), which is required for:
+#   - Bash scripts (CRLF breaks #!/usr/bin/env interpreter)
+#   - Dockerfile RUN directives (CRLF breaks multi-line commands)
+#   - .dockerignore (mostly cosmetic, but consistent)
+
+*.sh           text eol=lf
+Dockerfile     text eol=lf
+*.dockerfile   text eol=lf
+.dockerignore  text eol=lf
+*.conf         text eol=lf
+nginx.conf     text eol=lf
+
+# Python source — LF on all platforms (PEP 8 implicit, also matches Linux dev box)
+*.py text eol=lf
+
+# YAML — LF (most CI / kubernetes parsers expect this)
+*.yml  text eol=lf
+*.yaml text eol=lf
+
+# Markdown / docs — let git use the platform default (we have CJK content
+# and some platforms render CRLF differently; leave native).
+*.md   text
+
+# Binary files — never normalize
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.pdf  binary
+*.ico  binary
+*.db   binary

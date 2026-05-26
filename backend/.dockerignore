@@ -1,0 +1,76 @@
+# ResumeAI Backend — .dockerignore
+#
+# Build context: ./backend/ — anything matched here is NEVER copied into
+# the image. This is the LAST line of defense for privacy + image size.
+#
+# Note: paths outside ./backend/ (MEMORY/, docs/, .git/, frontend/, etc.)
+# are already invisible to the build because the context dir is ./backend/.
+
+# ─── Tests + dev tooling (not in production image) ──────────────────────
+tests/
+pytest.ini
+requirements-dev.txt
+.pytest_cache/
+
+# ─── Local data (must come from volume mount, not baked into image) ─────
+data/
+*.db
+*.db-journal
+*.sqlite3
+*.bak
+*.backup
+*.phase*-backup
+*.pre-*-backup
+
+# ─── Perf benchmarks (one-off local runs, not for production) ───────────
+perf/
+
+# ─── Secrets (paranoid — should not exist in backend/ but just in case) ─
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+
+# ─── Python build artifacts ─────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+build/
+dist/
+.eggs/
+.coverage
+htmlcov/
+
+# ─── Logs ───────────────────────────────────────────────────────────────
+*.log
+
+# ─── Docker-specific (already on the host, don't copy into image) ───────
+Dockerfile
+.dockerignore
+docker-compose.yml
+docker-compose.*.yml
+
+# ─── IDE / editor cruft ─────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ─── OS junk ────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ─── Debug snapshots ────────────────────────────────────────────────────
+analyses_dump*.json
+*_dump.json
+last_analysis.json
+paragraph_suggestions_salvage.json
+
+# ─── Git internal (shouldn't be in backend/ but paranoid) ───────────────
+.git/
+.gitignore

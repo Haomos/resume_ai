@@ -1,0 +1,75 @@
+ResumeAI — Database Migrations (Alembic)
+==========================================
+
+Why
+---
+Phase 4 baseline. From this commit forward Alembic is the *only* allowed
+mechanism for schema changes. The previous "drop sqlite + restart" pattern
+(used during Phase 1-3 dev) is now banned (PROJECT_SPEC §5.7 + ROADMAP §8.5).
+
+Configuration
+-------------
+* ``backend/alembic.ini``   — Alembic CLI settings; ``sqlalchemy.url`` is
+                              overridden at runtime by ``env.py`` (see below).
+* ``backend/alembic/env.py`` — pulls the live DB URL from ``app.config`` and
+                              registers every model on ``Base.metadata``.
+                              SQLite ``ALTER TABLE`` is automatically wrapped
+                              in batch mode (``render_as_batch=True``).
+
+The DB URL therefore tracks ``DB_URL`` in ``.env`` (or the default
+``sqlite+aiosqlite:///data/resume_assistant.db``). The async ``+aiosqlite``
+suffix is stripped because Alembic itself runs synchronously.
+
+Common operations (always run from ``backend/``)
+------------------------------------------------
+1. **Show current revision**::
+
+       python -m alembic current
+
+2. **Create a new migration after editing models**::
+
+       python -m alembic revision --autogenerate -m "add-foo-column"
+
+   Always review the generated file in ``alembic/versions/``. Autogenerate
+   may miss server-side defaults, check constraints, or rename detection —
+   adjust manually as needed.
+
+3. **Apply pending migrations** (deployment / upgrade)::
+
+       python -m alembic upgrade head
+
+4. **Roll back one revision** (rarely useful in production but handy in dev)::
+
+       python -m alembic downgrade -1
+
+5. **Stamp existing DB without running migrations** (e.g. when adopting
+   Alembic on an already-populated DB; only used once for the baseline)::
+
+       python -m alembic stamp head
+
+Conventions
+-----------
+* Migration messages: lowercase, hyphenated, imperative
+  (e.g. ``add-batch-id-index``, not ``Add Batch Id Index``).
+* Never edit a migration after it has been pushed to ``main`` — generate a
+  new one instead. Earlier revisions are immutable so production deploys
+  produce a deterministic schema.
+* SQLite + production: ``render_as_batch`` already covers the
+  no-real-ALTER-TABLE limitation. If you ever switch to PostgreSQL, you can
+  drop that flag.
+* Tests use ``conftest.py::setup_db`` which calls
+  ``Base.metadata.create_all`` directly for an ephemeral test DB — they do
+  *not* run migrations. The two paths must agree on schema definitions.
+
+Bootstrap a fresh deploy
+------------------------
+::
+
+    cd backend
+    rm -f data/resume_assistant.db          # only on a brand-new install
+    python -m alembic upgrade head          # creates every table at HEAD
+
+Then ``uvicorn app.main:app`` will start. The lifespan hook still calls
+``Base.metadata.create_all`` as a no-op safety net (creates only tables
+missing from metadata, never alters), but the canonical creation path is
+``alembic upgrade head``.
